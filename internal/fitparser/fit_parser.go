@@ -1,0 +1,5 @@
+package fitparser
+
+func Decode() {
+
+}
