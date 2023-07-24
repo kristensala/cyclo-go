@@ -1,10 +1,10 @@
 package bluetooth
 
 type Device struct {
-    name string
-    address string
-    isConnected bool
-    class string
+    Name string
+    Address string
+    IsConnected bool
+    Class string
 }
 
 type DeviceType string;

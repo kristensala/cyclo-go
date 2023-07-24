@@ -1,33 +1,26 @@
-import type { Component } from 'solid-js';
+import { Component, createResource, For, lazy } from 'solid-js';
 
-import logo from './logo.svg';
-import styles from './App.module.css';
-import { Greet } from '../wailsjs/go/main/App';
+import { ScanDevices } from '../wailsjs/go/main/App';
 
 const App: Component = () => {
+    const fetchDevices = async () => (await ScanDevices());
+    const [devices] = createResource(fetchDevices);
 
-    async function test() {
-        var t = await Greet("test");
-        console.log(t);
-    }
     return (
-        <div class={styles.App}>
-            <header class={styles.header}>
-                <img src={logo} class={styles.logo} alt="logo" />
-                <p>
-                    Edit <code>src/App.tsx</code> and save to reload.
-                </p>
-                <a
-                    class={styles.link}
-                    href="https://github.com/solidjs/solid"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Learn Solid
-                </a>
-            </header>
+        <div>
+            {devices.loading &&
+                <div>scanning for devices</div>
+            }
 
-            <button onclick={test}>test</button>
+            {devices() && (
+                <For each={devices()}>
+                    {(device) => (
+                        <div>{device.Name} {device.Address}</div>
+                    )}
+                </For>
+            )}
+
+            
         </div>
     );
 };

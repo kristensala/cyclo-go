@@ -5,12 +5,12 @@ import (
 //    "changeme/internal/fitparser"
 
     "context"
-    "fmt"
 )
 
 // App struct
 type App struct {
     ctx context.Context
+    btle BT.Btle
 }
 
 // NewApp creates a new App application struct
@@ -42,9 +42,8 @@ func (a *App) shutdown(ctx context.Context) {
 }
 
 // Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-    BT.Scan();
-    
-    return fmt.Sprintf("Hello %s, It's show time!", name)
+func (a *App) ScanDevices() []BT.Device {
+    devices := <-a.btle.Scan()
+    return devices;
 }
 

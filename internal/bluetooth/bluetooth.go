@@ -1,10 +1,14 @@
 package bluetooth
 
 import (
-	"time"
+    "time"
 
-	bt "tinygo.org/x/bluetooth"
+    bt "tinygo.org/x/bluetooth"
 )
+
+type Btle struct {
+    scanResult []Device
+}
 
 var (
     adapter = bt.DefaultAdapter
@@ -14,26 +18,55 @@ var (
 )
 
 
-func Scan() {
+// So this is an async function
+// <- means we are awaiting something
+func (btle *Btle) Scan() <- chan []Device {
     adapter.Enable()
+
+    r := make(chan []Device)
 
     go func() {
         adapter.Scan(func(a *bt.Adapter, sr bt.ScanResult) {
-            println("Device:", sr.Address.String(), sr.RSSI, sr.LocalName())
+            if !contains(btle.scanResult, sr.Address.String()) {
+                btle.scanResult = append(btle.scanResult, Device {
+                    Name: sr.LocalName(),
+                    Address: sr.Address.String(),
+                })
+            }
         })
+
+        r <-btle.scanResult
     }()
+
+    /*
+This also works
+
+time.Sleep(10 * time.Second)
+println("Stopping scanning")
+*/
 
     select {
         case <-time.After(10 * time.Second):
-            println("Stopping scanning")
+            println("Stopping scan!")
             adapter.StopScan()
     }
+
+    return r
 }
 
-func Connect() {
+func contains(array []Device, address string) bool {
+    for _, device := range array {
+        if device.Address == address {
+            return true
+        }
+    }
+
+    return false
+}
+func (btle *Btle) Connect() {
 
 }
 
-func Disconnect() {
+func (btle *Btle) Disconnect() {
 
 }
