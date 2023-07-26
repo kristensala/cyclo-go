@@ -1,26 +1,22 @@
-import { Component, createResource, For, lazy } from 'solid-js';
-
-import { ScanDevices } from '../wailsjs/go/main/App';
+import { Component, createResource, createSignal, For, JSXElement, lazy } from 'solid-js';
+import { ScanDevices, FetchHeartRate } from '../wailsjs/go/main/App';
 
 const App: Component = () => {
+    const [heartRate, setHeartRate] = createSignal(0)
+
     const fetchDevices = async () => (await ScanDevices());
-    const [devices] = createResource(fetchDevices);
+    const [test] = createResource(fetchDevices);
+
+    setInterval(async () => {
+        let t = await FetchHeartRate()
+        console.log(t)
+
+        setHeartRate(t)
+    })
 
     return (
         <div>
-            {devices.loading &&
-                <div>scanning for devices</div>
-            }
-
-            {devices() && (
-                <For each={devices()}>
-                    {(device) => (
-                        <div>{device.Name} {device.Address}</div>
-                    )}
-                </For>
-            )}
-
-            
+            HEART RATE: {heartRate()}
         </div>
     );
 };

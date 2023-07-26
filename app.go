@@ -41,9 +41,11 @@ func (a *App) shutdown(ctx context.Context) {
     // Perform your teardown here
 }
 
-// Greet returns a greeting for the given name
-func (a *App) ScanDevices() []BT.Device {
-    devices := <-a.btle.Scan()
-    return devices;
+func (a *App) ScanDevices() {
+    <-a.btle.Scan()
+}
+
+func (a *App) FetchHeartRate() uint8 {
+    return a.btle.HeartRate
 }
 

@@ -1,13 +1,11 @@
 package bluetooth
 
 import (
-    "time"
-
-    bt "tinygo.org/x/bluetooth"
+	bt "tinygo.org/x/bluetooth"
 )
 
 type Btle struct {
-    scanResult []Device
+    HeartRate uint8
 }
 
 var (
@@ -15,58 +13,73 @@ var (
 
     heartRateServiceUUID = bt.ServiceUUIDHeartRate
     heartRateCharacteristicUUID = bt.CharacteristicUUIDHeartRateMeasurement
+
+    cyclingPowerServiceUUID = bt.ServiceUUIDCyclingPower
+    cyclingSpeedAndCadenceUUID = bt.ServiceUUIDCyclingSpeedAndCadence
 )
 
+func Start() {
+
+}
 
 // So this is an async function
 // <- means we are awaiting something
-func (btle *Btle) Scan() <- chan []Device {
+func (btle *Btle) Scan() <- chan uint8 {
     adapter.Enable()
 
-    r := make(chan []Device)
+    ch := make(chan bt.ScanResult, 1)
 
-    go func() {
-        adapter.Scan(func(a *bt.Adapter, sr bt.ScanResult) {
-            if !contains(btle.scanResult, sr.Address.String()) {
-                btle.scanResult = append(btle.scanResult, Device {
-                    Name: sr.LocalName(),
-                    Address: sr.Address.String(),
-                })
-            }
-        })
-
-        r <-btle.scanResult
-    }()
-
-    /*
-This also works
-
-time.Sleep(10 * time.Second)
-println("Stopping scanning")
-*/
-
-    select {
-        case <-time.After(10 * time.Second):
-            println("Stopping scan!")
+    println("scanning")
+    err := adapter.Scan(func(a *bt.Adapter, sr bt.ScanResult) {
+        if sr.Address.String() == "EA:FE:62:36:C4:83" {
             adapter.StopScan()
-    }
-
-    return r
-}
-
-func contains(array []Device, address string) bool {
-    for _, device := range array {
-        if device.Address == address {
-            return true
+            ch <- sr
         }
+    })
+
+    var device *bt.Device
+    select {
+    case result := <-ch:
+        device, err = adapter.Connect(result.Address, bt.ConnectionParams{})
+        if err != nil {
+            println(err.Error())
+        }
+
+        println("connected to ", result.Address.String())
     }
 
-    return false
-}
-func (btle *Btle) Connect() {
+    hrch := make(chan uint8)
+    go btle.getHeartRate(*device, hrch)
 
+    return hrch
 }
 
-func (btle *Btle) Disconnect() {
+func (btle *Btle) getHeartRate(device bt.Device, ch chan uint8) {
+    services, _ := device.DiscoverServices([]bt.UUID {heartRateServiceUUID})
 
+    if len(services) == 0 {
+        panic("hmm...")
+    }
+
+    service := services[0]
+    println("Found service", service.UUID)
+    chars, err := service.DiscoverCharacteristics([]bt.UUID{heartRateCharacteristicUUID})
+
+    if err != nil {
+        println("Error discovering:", err)
+    }
+
+    if len(chars) == 0 {
+        println("could not read heartrate data")
+    }
+
+    char := chars[0]
+    char.EnableNotifications(func(buf []byte) {
+        btle.HeartRate = uint8(buf[1])
+        println("heart", uint8(buf[1]))
+    })
+
+    select {}
 }
+
+
