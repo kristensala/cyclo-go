@@ -42,7 +42,7 @@ func (a *App) shutdown(ctx context.Context) {
 }
 
 func (a *App) ScanDevices() {
-    <-a.btle.Scan()
+    a.btle.Start()
 }
 
 func (a *App) FetchHeartRate() uint8 {

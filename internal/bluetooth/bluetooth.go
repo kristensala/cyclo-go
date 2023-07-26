@@ -18,13 +18,7 @@ var (
     cyclingSpeedAndCadenceUUID = bt.ServiceUUIDCyclingSpeedAndCadence
 )
 
-func Start() {
-
-}
-
-// So this is an async function
-// <- means we are awaiting something
-func (btle *Btle) Scan() <- chan uint8 {
+func (btle *Btle) Start() {
     adapter.Enable()
 
     ch := make(chan bt.ScanResult, 1)
@@ -33,7 +27,7 @@ func (btle *Btle) Scan() <- chan uint8 {
     err := adapter.Scan(func(a *bt.Adapter, sr bt.ScanResult) {
         if sr.Address.String() == "EA:FE:62:36:C4:83" {
             adapter.StopScan()
-            ch <- sr
+            ch <-sr
         }
     })
 
@@ -48,13 +42,10 @@ func (btle *Btle) Scan() <- chan uint8 {
         println("connected to ", result.Address.String())
     }
 
-    hrch := make(chan uint8)
-    go btle.getHeartRate(*device, hrch)
-
-    return hrch
+    btle.getHeartRate(*device)
 }
 
-func (btle *Btle) getHeartRate(device bt.Device, ch chan uint8) {
+func (btle *Btle) getHeartRate(device bt.Device) {
     services, _ := device.DiscoverServices([]bt.UUID {heartRateServiceUUID})
 
     if len(services) == 0 {
